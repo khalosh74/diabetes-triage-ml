@@ -1,8 +1,0 @@
-#!/home/alrassk74/Prog/Maio2/diabetes-triage-ml/.venv/bin/python3
-# -*- coding: utf-8 -*-
-import re
-import sys
-from pytest import console_main
-if __name__ == '__main__':
-    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
-    sys.exit(console_main())
