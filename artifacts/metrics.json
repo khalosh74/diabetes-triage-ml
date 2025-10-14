@@ -1,3 +1,28 @@
 {
-  "rmse": 53.85344583676595
+  "version": "0.2.0",
+  "threshold_value": 214.0,
+  "baseline": {
+    "name": "LinearRegression",
+    "rmse": 53.85344583676595,
+    "precision_at_thr": 1.0,
+    "recall_at_thr": 0.2857142857142857
+  },
+  "ridge": {
+    "name": "Ridge",
+    "rmse": 53.7774540653439,
+    "precision_at_thr": 1.0,
+    "recall_at_thr": 0.2857142857142857
+  },
+  "random_forest": {
+    "name": "RandomForestRegressor",
+    "rmse": 54.75710850734263,
+    "precision_at_thr": 0.875,
+    "recall_at_thr": 0.3333333333333333
+  },
+  "selected": "Ridge",
+  "deltas_vs_baseline": {
+    "rmse_delta": -0.07599177142204638,
+    "precision_delta": 0.0,
+    "recall_delta": 0.0
+  }
 }
