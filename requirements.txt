@@ -1,9 +1,14 @@
-fastapi
-uvicorn
-pydantic
-scikit-learn
-pandas
-numpy
-joblib
-pytest
-httpx
+fastapi==0.115.0
+uvicorn==0.30.6
+pydantic==2.9.2
+numpy==1.26.4
+scipy==1.11.4
+pandas==2.2.2
+scikit-learn==1.5.2
+joblib==1.4.2
+
+# Dev/test tools (safe to leave pinned even if not used in Docker runtime)
+pytest==8.3.3
+httpx==0.27.2
+ruff==0.6.9
+black==24.8.0

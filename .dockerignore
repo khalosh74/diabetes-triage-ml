@@ -1,10 +1,12 @@
 .venv
 __pycache__/
-.git
-.github
-artifacts/
-tests/
 *.pyc
 *.pyo
-*.egg-info
-.env
+*.pyd
+.artifacts_cache/
+artifacts/*        # artifacts are rebuilt inside the image
+.git
+.gitignore
+.github
+tests
+*.ipynb_checkpoints
