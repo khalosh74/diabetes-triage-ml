@@ -8,8 +8,6 @@ env/
 __pycache__/
 .git
 .github
-artifacts/
-tests/
 *.pyc
 *.pyo
 *.egg-info
