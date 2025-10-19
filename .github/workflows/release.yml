@@ -1,104 +1,104 @@
-name: release
+name: release                     # The workflow's display name in the Actions tab.
 
 on:
   push:
-    tags: ["v*"]          # runs when you push a tag like v0.2.11
-  workflow_dispatch:       # allow manual runs from the Actions tab
+    tags: ["v*"]                  # Trigger when you push a git tag that starts with v (e.g., v0.2.11).
+  workflow_dispatch:              # Also allow manual runs from the Actions UI (useful for retesting).
 
 concurrency:
-  group: release-${{ github.ref_name }}
-  cancel-in-progress: true
+  group: release-${{ github.ref_name }}  # Ensure only one release per tag runs at a time.
+  cancel-in-progress: true               # Cancel an older in-flight run for the same tag if re-triggered.
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
+  release:                         # A single job named "release".
+    runs-on: ubuntu-latest         # Use GitHub's latest Ubuntu runner VM.
+    timeout-minutes: 35            # Hard stop to avoid jobs hanging forever.
 
-    # Needed for publishing releases and (optionally) packages
-    permissions:
-      contents: write
-      packages: write
+    permissions:                   # Needed for two things:
+      contents: write              # 1) Creating the GitHub Release (publishing release notes + assets).
+      packages: write              # 2) Pushing images to GHCR (GitHub Container Registry).
 
     env:
-      IMAGE: ghcr.io/${{ github.repository }}
-      PYTHON_VERSION: "3.11"
+      IMAGE: ghcr.io/${{ github.repository }}  # e.g., ghcr.io/khalosh74/diabetes-triage-ml
+      PYTHON_VERSION: "3.11"                    # Keep language versions centralized.
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4   # Pulls your repository code (at the tagged commit) into the runner.
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
+          python-version: ${{ env.PYTHON_VERSION }}  # Installs Python 3.11.
+          cache: pip                                 # Caches pip packages between runs to speed up.
 
       - name: Install deps & train (emit artifacts)
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          python src/diaclinic/train.py
+        run: |                                      # Build-time determinism: train inside the workflow.
+          python -m pip install --upgrade pip       # Upgrade pip to a consistent version.
+          pip install -r requirements.txt           # Install your pinned dependencies.
+          python src/diaclinic/train.py             # Train the model; writes artifacts/model.pkl + metrics.json.
           echo "== artifacts =="
-          ls -al artifacts
+          ls -al artifacts                          # Log contents for traceability.
 
       - name: Upload run artifacts (for CI provenance)
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts
-          path: artifacts/*
+          name: artifacts                           # Save the training outputs as workflow artifacts.
+          path: artifacts/*                         # Lets anyone download model.pkl + metrics.json from the run.
 
-      # 🔐 Use your PAT secret with write:packages + read:packages
+      # 🔐 The critical bit: authenticate to GHCR using a Personal Access Token (PAT).
+      #    This bypasses GHCR's "package ownership" quirk you hit with GITHUB_TOKEN.
       - name: Login to GHCR (PAT)
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}     # resolves to "khalosh74"
-          password: ${{ secrets.GHCR_PAT }}
+          username: ${{ github.repository_owner }}  # Expands to "khalosh74" in your repo context.
+          password: ${{ secrets.GHCR_PAT }}         # Repo secret containing a PAT with write:packages, read:packages.
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3         # Modern builder with caching + multi-arch support.
 
       - name: Build & push image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: Dockerfile         # you renamed it; keep explicit
-          platforms: linux/amd64   # good default for most users
-          push: true
-          provenance: false        # avoid attestation quirks on some setups
-          tags: |
-            ${{ env.IMAGE }}:${{ github.ref_name }}
-            ${{ env.IMAGE }}:latest
+          context: .                                # Build context is repo root.
+          file: Dockerfile                          # Explicit path; avoids “Dockerfile not found”.
+          platforms: linux/amd64                    # Good default for most users pulling on PCs/servers.
+          push: true                                # Actually push to GHCR (not just build locally).
+          provenance: false                         # Avoids attestation quirks; keeps manifest simple.
+          tags: |                                   # Publish two tags:
+            ${{ env.IMAGE }}:${{ github.ref_name }} #   1) the exact git tag (e.g., v0.2.11)
+            ${{ env.IMAGE }}:latest                 #   2) a floating "latest" for convenience.
 
       - name: Smoke test container
-        run: |
+        run: |                                      # Quick runtime verification before we publish a Release.
           docker run -d --rm -p 8000:8000 --name diaclinic $IMAGE:${{ github.ref_name }}
-          for i in {1..30}; do
+          for i in {1..30}; do                      # Wait up to ~30s for readiness.
             if curl -sf http://localhost:8000/ready >/dev/null; then break; fi
             sleep 1
           done
-          curl -sf http://localhost:8000/health | head -c 200
-          curl -sf -X POST http://localhost:8000/predict_one \
+          curl -sf http://localhost:8000/health | head -c 200  # Basic health check.
+          curl -sf -X POST http://localhost:8000/predict_one \ # Simple prediction to ensure API works.
             -H "Content-Type: application/json" \
             -d '{"age":0,"sex":0,"bmi":0,"bp":0,"s1":0,"s2":0,"s3":0,"s4":0,"s5":0,"s6":0}' >/dev/null
           docker stop diaclinic
 
       - id: read_metrics
         name: Capture metrics for release notes
-        run: |
+        run: |                                      # Robust way to put multiline JSON into a job output.
           { echo "metrics<<EOF"; cat artifacts/metrics.json; echo "EOF"; } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release with artifacts
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body: |
+          tag: ${{ github.ref_name }}               # Create/update the Release for this tag (vX.Y.Z).
+          name: ${{ github.ref_name }}              # Release title = tag.
+          body: |                                   # Include metrics.json content in the notes.
             ## Metrics
             ```
             ${{ steps.read_metrics.outputs.metrics }}
             ```
-          artifacts: |
+          artifacts: |                               # Upload files to the Release (clickable downloads).
             artifacts/metrics.json,
             artifacts/model.pkl
-          allowUpdates: true
+          allowUpdates: true                         # If the Release already exists, update it.
