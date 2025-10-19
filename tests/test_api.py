@@ -105,15 +105,20 @@ def test_predict_vectors_ok_with_flags():
     assert "threshold_used" in j
 
 
-def test_predict_missing_feature_400():
+def test_predict_missing_feature_422():
     fo = _feature_order()
     # Drop one key to simulate a bad record
     bad = {k: 0.0 for k in fo if k != fo[-1]}
     r = client.post("/predict", json={"records": [bad], "include_flag": False})
-    assert r.status_code == 400
+    assert r.status_code == 422
     j = r.json()
-    assert "detail" in j and j["detail"].get("error") in {"missing_features", "missing_features"}  # name check
-    assert fo[-1] in j["detail"].get("missing", [])
+    assert "detail" in j
+    # Pydantic v2 reports missing fields with type == "missing" and loc pointing to the field
+    missing_errors = [
+        err for err in j["detail"]
+        if err.get("type") == "missing" and err.get("loc", [])[-1] == fo[-1]
+    ]
+    assert missing_errors, f"Expected validation error for missing field {fo[-1]!r}"
 
 
 def test_predict_vectors_bad_length_400():
