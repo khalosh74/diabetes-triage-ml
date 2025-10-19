@@ -1,4 +1,5 @@
 import json
+import textwrap
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import joblib
@@ -6,7 +7,6 @@ import numpy as np
 import pandas as pd
 
 from sklearn.datasets import load_diabetes
-from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression, Ridge
@@ -120,18 +120,28 @@ def main():
     (ARTIFACT_DIR / "metrics.json").write_text(json.dumps(metrics, indent=2))
 
     # ===== 6) append CHANGELOG =====
-    change = f"""
-## v{VERSION}
+    change = textwrap.dedent(
+        f"""
+        ## v{VERSION}
 
-- Model: **{best_name}**
-- High-risk threshold (train {int(HIGH_RISK_Q*100)}th pct of y): **{high_risk_threshold:.3f}**
-- RMSE (baseline LinearRegression): {rep_lin.rmse:.3f}
-- RMSE (selected): **{best.rmse:.3f}**  _(Δ vs baseline: {best.rmse - rep_lin.rmse:+.3f}, lower is better)_
-- Precision @ threshold (baseline → selected): {(rep_lin.precision_at_thr or 0):.3f} → **{(best.precision_at_thr or 0):.3f}**
-- Recall @ threshold (baseline → selected): {(rep_lin.recall_at_thr or 0):.3f} → **{(best.recall_at_thr or 0):.3f}**
+        - Model: **{best_name}**
+        - High-risk threshold (train {int(HIGH_RISK_Q*100)}th pct of y): **{high_risk_threshold:.3f}**
+        - RMSE (baseline LinearRegression): {rep_lin.rmse:.3f}
+        - RMSE (selected): **{best.rmse:.3f}**  _(Δ vs baseline: {best.rmse - rep_lin.rmse:+.3f}, lower is better)_
+        - Precision @ threshold (baseline → selected): {(rep_lin.precision_at_thr or 0):.3f} → **{(best.precision_at_thr or 0):.3f}**
+        - Recall @ threshold (baseline → selected): {(rep_lin.recall_at_thr or 0):.3f} → **{(best.recall_at_thr or 0):.3f}**
+        """
+    ).strip() + "\n"
 
-"""
-    CHANGELOG.write_text(CHANGELOG.read_text() + change if CHANGELOG.exists() else "# Changelog\n" + change)
+    if CHANGELOG.exists():
+        current = CHANGELOG.read_text()
+    else:
+        current = "# Changelog\n\n"
+
+    if change not in current:
+        if not current.endswith("\n"):
+            current += "\n"
+        CHANGELOG.write_text(current + change + "\n")
 
     # console hint
     print(json.dumps(metrics, indent=2))
