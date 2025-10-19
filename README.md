@@ -1,6 +1,6 @@
 # Virtual Diabetes Clinic — ML Triage Service
 
-Predict a **short‑term progression risk score** for diabetes check‑ins (higher = worse). v0.2 also supports an optional **high‑risk flag** using a learned threshold. Everything is reproducible, Dockerized, and automated with GitHub Actions.
+Predict a **short‑term progression risk score** for diabetes check‑ins (higher = worse). v0.2.0 also supports an optional **high‑risk flag** using a learned threshold. Everything is reproducible, Dockerized, and automated with GitHub Actions.
 
 ---
 
@@ -9,7 +9,7 @@ Predict a **short‑term progression risk score** for diabetes check‑ins (high
 - **API**: FastAPI service with Swagger at `/docs`
 - **Model**:
   - **v0.1 (baseline)** – `StandardScaler → LinearRegression`
-  - **v0.2 (improved)** – Trains **Ridge** and **RandomForestRegressor**, selects the best RMSE, adds a **high‑risk** flag
+  - **v0.2.0 (improved)** – Trains **Ridge** and **RandomForestRegressor**, selects the best RMSE, adds a **high‑risk** flag
 - **Artifacts**: `artifacts/model.pkl`, `artifacts/metrics.json` (created by `train.py` or during Docker build)
 - **Pipelines**: GitHub Actions for CI and Release
 - **Reproducibility**: pinned deps, fixed seeds, deterministic training in Docker build
@@ -20,13 +20,13 @@ Predict a **short‑term progression risk score** for diabetes check‑ins (high
 
 ```bash
 # from repo root
-docker build -t diaclinic:0.2 .
-docker run --rm -p 8000:8000 diaclinic:0.2
+docker build -t diaclinic:0.2.0 .
+docker run --rm -p 8000:8000 diaclinic:0.2.0
 ```
 
 Open: http://localhost:8000/ → redirects to `/docs`
 
-Port busy? Use another host port: `docker run --rm -p 9000:8000 diaclinic:0.2` then visit http://localhost:9000/.
+Port busy? Use another host port: `docker run --rm -p 9000:8000 diaclinic:0.2.0` then visit http://localhost:9000/.
 
 ---
 
@@ -107,12 +107,12 @@ age, sex, bmi, bp, s1, s2, s3, s4, s5, s6
 - Dataset: `sklearn.datasets.load_diabetes(as_frame=True)`
 - Split: `test_size=0.2`, `random_state=42`
 - **v0.1**: `StandardScaler + LinearRegression` → report RMSE
-- **v0.2**: Train **Ridge** & **RandomForestRegressor**, choose **best RMSE**; compute **high‑risk threshold** at the **0.75 quantile of y_train**; report **precision/recall @ threshold**
+- **v0.2.0**: Train **Ridge** & **RandomForestRegressor**, choose **best RMSE**; compute **high‑risk threshold** at the **0.75 quantile of y_train**; report **precision/recall @ threshold**
 
 Artifacts saved to `artifacts/`:
 - `model.pkl` – fitted model/pipeline + metadata (feature order, threshold, candidates)
 - `metrics.json` – baseline, candidates, selected, and deltas vs baseline
-- `CHANGELOG.md` – auto‑appended summary for v0.2
+- `CHANGELOG.md` – auto‑appended summary for v0.2.0
 
 Training locally:
 ```bash
@@ -146,3 +146,4 @@ git push origin v0.2.0
 - Swagger examples in `/docs` show valid request bodies.
 - CORS is open for local dev; restrict `ALLOW_ORIGINS` env when deploying.
 - License: add your preferred license in `LICENSE`.
+
