@@ -1,17 +1,27 @@
 name: ci
+
 on:
   push:
-    branches: [ main ]
+    branches: [ master, main ]
   pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
@@ -26,13 +36,15 @@ jobs:
           ruff check .
           black --check .
 
-      - name: Train (smoke; produces artifacts/)
-        run: python src/diaclinic/train.py
-
-      - name: Test
+      - name: Run tests
         run: pytest -q
 
-      - name: Upload artifacts
+      - name: Quick train (emit artifacts)
+        run: |
+          python src/diaclinic/train.py
+          ls -al artifacts
+
+      - name: Upload training artifacts
         uses: actions/upload-artifact@v4
         with:
           name: artifacts
