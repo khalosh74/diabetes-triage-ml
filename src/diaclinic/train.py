@@ -23,6 +23,7 @@ TEST_SIZE = 0.2
 VERSION = "0.2.0"
 HIGH_RISK_Q = 0.75  # high-risk = top quartile of progression index
 
+
 @dataclass
 class ModelReport:
     name: str
@@ -30,8 +31,10 @@ class ModelReport:
     precision_at_thr: float | None = None
     recall_at_thr: float | None = None
 
+
 def _rmse(y_true, y_pred):
     return float(np.sqrt(mean_squared_error(y_true, y_pred)))
+
 
 def _train_and_eval(model, X_tr, y_tr, X_te, y_te, thr_val=None, name="model"):
     model.fit(X_tr, y_tr)
@@ -43,7 +46,10 @@ def _train_and_eval(model, X_tr, y_tr, X_te, y_te, thr_val=None, name="model"):
         y_pred_flag = (preds >= thr_val).astype(int)
         prec = float(precision_score(y_true_flag, y_pred_flag, zero_division=0))
         rec = float(recall_score(y_true_flag, y_pred_flag, zero_division=0))
-    return model, ModelReport(name=name, rmse=rmse, precision_at_thr=prec, recall_at_thr=rec)
+    return model, ModelReport(
+        name=name, rmse=rmse, precision_at_thr=prec, recall_at_thr=rec
+    )
+
 
 def main():
     # ===== 1) load and split =====
@@ -60,7 +66,12 @@ def main():
 
     # ===== 2) define candidates =====
     lin = Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())])
-    ridge = Pipeline([("scaler", StandardScaler()), ("model", Ridge(alpha=1.0, random_state=RANDOM_STATE))])
+    ridge = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("model", Ridge(alpha=1.0, random_state=RANDOM_STATE)),
+        ]
+    )
     rf = RandomForestRegressor(
         n_estimators=300, max_depth=None, random_state=RANDOM_STATE, n_jobs=-1
     )  # RF doesn’t need scaling
@@ -69,9 +80,15 @@ def main():
     high_risk_threshold = float(np.quantile(y_tr, HIGH_RISK_Q))
 
     # ===== 3) train + evaluate all =====
-    _, rep_lin = _train_and_eval(lin, X_tr, y_tr, X_te, y_te, high_risk_threshold, "LinearRegression")
-    _, rep_ridge = _train_and_eval(ridge, X_tr, y_tr, X_te, y_te, high_risk_threshold, "Ridge")
-    best_model, rep_rf = _train_and_eval(rf, X_tr, y_tr, X_te, y_te, high_risk_threshold, "RandomForestRegressor")
+    _, rep_lin = _train_and_eval(
+        lin, X_tr, y_tr, X_te, y_te, high_risk_threshold, "LinearRegression"
+    )
+    _, rep_ridge = _train_and_eval(
+        ridge, X_tr, y_tr, X_te, y_te, high_risk_threshold, "Ridge"
+    )
+    best_model, rep_rf = _train_and_eval(
+        rf, X_tr, y_tr, X_te, y_te, high_risk_threshold, "RandomForestRegressor"
+    )
 
     # Pick the *lowest RMSE* among Ridge / RF (Iteration 2 improvement)
     candidates = [rep_ridge, rep_rf]
@@ -84,7 +101,7 @@ def main():
 
     # ===== 4) persist bundle =====
     bundle = {
-        "pipeline": best_model,              # may be Pipeline or RF
+        "pipeline": best_model,  # may be Pipeline or RF
         "feature_order": numeric_cols,
         "metadata": {
             "model": best_name,
@@ -107,20 +124,19 @@ def main():
         "random_forest": asdict(rep_rf),
         "selected": best_name,
         "deltas_vs_baseline": {
-            "rmse_delta": (best.rmse - rep_lin.rmse),               # negative = improvement
+            "rmse_delta": (best.rmse - rep_lin.rmse),  # negative = improvement
             "precision_delta": (
                 (best.precision_at_thr or 0) - (rep_lin.precision_at_thr or 0)
             ),
-            "recall_delta": (
-                (best.recall_at_thr or 0) - (rep_lin.recall_at_thr or 0)
-            ),
+            "recall_delta": ((best.recall_at_thr or 0) - (rep_lin.recall_at_thr or 0)),
         },
     }
     (ARTIFACT_DIR / "metrics.json").write_text(json.dumps(metrics, indent=2))
 
     # ===== 6) append CHANGELOG =====
-    change = textwrap.dedent(
-        f"""
+    change = (
+        textwrap.dedent(
+            f"""
         ## v{VERSION}
 
         - Model: **{best_name}**
@@ -130,7 +146,9 @@ def main():
         - Precision @ threshold (baseline → selected): {(rep_lin.precision_at_thr or 0):.3f} → **{(best.precision_at_thr or 0):.3f}**
         - Recall @ threshold (baseline → selected): {(rep_lin.recall_at_thr or 0):.3f} → **{(best.recall_at_thr or 0):.3f}**
         """
-    ).strip() + "\n"
+        ).strip()
+        + "\n"
+    )
 
     if CHANGELOG.exists():
         current = CHANGELOG.read_text()
@@ -144,6 +162,7 @@ def main():
 
     # console hint
     print(json.dumps(metrics, indent=2))
+
 
 if __name__ == "__main__":
     main()

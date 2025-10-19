@@ -57,8 +57,16 @@ def test_predict_one_ok():
 
     # The /predict_one endpoint expects flat fields, not nested "records"
     payload = {
-        "age": rec["age"], "sex": rec["sex"], "bmi": rec["bmi"], "bp": rec["bp"],
-        "s1": rec["s1"], "s2": rec["s2"], "s3": rec["s3"], "s4": rec["s4"], "s5": rec["s5"], "s6": rec["s6"]
+        "age": rec["age"],
+        "sex": rec["sex"],
+        "bmi": rec["bmi"],
+        "bp": rec["bp"],
+        "s1": rec["s1"],
+        "s2": rec["s2"],
+        "s3": rec["s3"],
+        "s4": rec["s4"],
+        "s5": rec["s5"],
+        "s6": rec["s6"],
     }
     r = client.post("/predict_one", json=payload)
     assert r.status_code == 200
@@ -115,7 +123,8 @@ def test_predict_missing_feature_422():
     assert "detail" in j
     # Pydantic v2 reports missing fields with type == "missing" and loc pointing to the field
     missing_errors = [
-        err for err in j["detail"]
+        err
+        for err in j["detail"]
         if err.get("type") == "missing" and err.get("loc", [])[-1] == fo[-1]
     ]
     assert missing_errors, f"Expected validation error for missing field {fo[-1]!r}"
@@ -125,7 +134,9 @@ def test_predict_vectors_bad_length_400():
     fo = _feature_order()
     # Only 9 features instead of 10
     bad_vec = [0.0] * (len(fo) - 1)
-    r = client.post("/predict_vectors", json={"vectors": [bad_vec], "include_flag": False})
+    r = client.post(
+        "/predict_vectors", json={"vectors": [bad_vec], "include_flag": False}
+    )
     assert r.status_code == 400
     j = r.json()
     assert j.get("detail", {}).get("error") == "bad_vector_length"
