@@ -105,8 +105,16 @@ class PredictResponse(BaseModel):
     threshold_used: float | None = None
 
 class SingleRecord(BaseModel):
-    age: float; sex: float; bmi: float; bp: float; s1: float; s2: float; s3: float; s4: float; s5: float; s6: float
-
+    age: float
+    sex: float
+    bmi: float
+    bp: float
+    s1: float
+    s2: float
+    s3: float
+    s4: float
+    s5: float
+    s6: float
 # Example response shown in Swagger (uses loaded defaults)
 EXAMPLE_RESPONSE = {
     "scores": [201.82],
