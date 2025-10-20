@@ -33,7 +33,7 @@ Port busy? Use another host port: `docker run --rm -p 9000:8000 diaclinic:0.2.0`
 ## Run it (local Python – optional)
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 # mac/linux
 source .venv/bin/activate
 # windows powershell: .venv\Scripts\Activate.ps1
