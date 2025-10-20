@@ -2,7 +2,7 @@ name: release (diagnostic)
 
 on:
   push:
-    tags: ["v*"]            # normal: tag-driven
+    tags: ["v*"]            # run when pushing a tag like v0.2.13
   workflow_dispatch:        # allow manual runs
 
 concurrency:
@@ -66,7 +66,7 @@ jobs:
           else
             echo "version=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
-          echo "Using version=$(cat $GITHUB_OUTPUT)"
+          echo "Using version=$(grep '^version=' $GITHUB_OUTPUT | cut -d= -f2)"
 
       - name: Check PAT presence (no secrets printed)
         run: |
@@ -106,9 +106,10 @@ jobs:
           platforms: linux/amd64
           push: true
           provenance: false
-          tags:
-            - ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
-            - ${{ env.IMAGE }}:latest
+          # Use a block STRING (not a YAML sequence) for tags:
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
+            ${{ env.IMAGE }}:latest
 
       - name: Smoke test container
         run: |
@@ -138,8 +139,7 @@ jobs:
             ```
             ${{ steps.read_metrics.outputs.metrics }}
             ```
-          artifacts: |
-            artifacts/metrics.json,
-            artifacts/model.pkl
+          # Keep artifacts as a single string (comma-separated), not a YAML list:
+          artifacts: artifacts/metrics.json,artifacts/model.pkl
           allowUpdates: true
       # ---------- END DIAGNOSTICS ----------
