@@ -94,7 +94,19 @@ jobs:
       - id: read_metrics
         name: Capture metrics for release notes
         run: |
-          { echo "metrics<<EOF"; cat artifacts/metrics.json; echo "EOF"; } >> "$GITHUB_OUTPUT"
+          python - <<'PY'
+          import json, os
+          p = 'artifacts/metrics.json'
+          data = json.load(open(p))
+          # Show pretty JSON in logs (optional)
+          print("Metrics (pretty):")
+          print(json.dumps(data, indent=2))
+          # Write single-line JSON to GITHUB_OUTPUT
+          out = os.environ['GITHUB_OUTPUT']
+          with open(out, 'a') as f:
+              f.write('metrics=' + json.dumps(data, separators=(",",":")) + '\n')
+          PY
+
 
       - name: Create GitHub Release with artifacts (only on tag)
         if: startsWith(github.ref, 'refs/tags/')
