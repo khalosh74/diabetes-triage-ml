@@ -61,14 +61,15 @@ jobs:
       - name: Build & push image
         uses: docker/build-push-action@v6
         with:
-          context: .                                # Build context is repo root.
-          file: Dockerfile                          # Explicit path; avoids “Dockerfile not found”.
-          platforms: linux/amd64                    # Good default for most users pulling on PCs/servers.
-          push: true                                # Actually push to GHCR (not just build locally).
-          provenance: false                         # Avoids attestation quirks; keeps manifest simple.
-          tags: |                                   # Publish two tags:
-            ${{ env.IMAGE }}:${{ github.ref_name }} #   1) the exact git tag (e.g., v0.2.11)
-            ${{ env.IMAGE }}:latest                 #   2) a floating "latest" for convenience.
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.IMAGE }}:${{ github.ref_name }}
+            ${{ env.IMAGE }}:latest
+
 
       - name: Smoke test container
         run: |                                      # Quick runtime verification before we publish a Release.
