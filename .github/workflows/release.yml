@@ -83,12 +83,20 @@ jobs:
           username: ${{ github.repository_owner }}     # resolves to "khalosh74"
           password: ${{ secrets.GHCR_PAT }}
 
-      - name: Quick GHCR pushcheck (diagnostic)
-        run: |
-          set -eux
-          docker pull busybox:latest
-          docker tag busybox:latest "${IMAGE}-pushcheck:${{ steps.ver.outputs.version }}"
-          docker push "${IMAGE}-pushcheck:${{ steps.ver.outputs.version }}"
+        - name: Quick GHCR pushcheck (diagnostic)
+          run: |
+            set -eux
+            cat > Dockerfile.pushcheck <<'EOF'
+            FROM scratch
+            LABEL org.opencontainers.image.title="pushcheck"
+            LABEL org.opencontainers.image.source="${{ github.repository }}"
+            EOF
+            docker buildx build \
+              -f Dockerfile.pushcheck \
+              -t "${IMAGE}-pushcheck:${{ github.ref_name }}" \
+              --platform linux/amd64 \
+              --push .
+
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
