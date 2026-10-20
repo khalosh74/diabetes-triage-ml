@@ -153,8 +153,7 @@ def main():
                 - (test_baseline.precision_at_thr or 0)
             ),
             "recall_delta": (
-                (test_selected.recall_at_thr or 0)
-                - (test_baseline.recall_at_thr or 0)
+                (test_selected.recall_at_thr or 0) - (test_baseline.recall_at_thr or 0)
             ),
         },
     }
