@@ -149,10 +149,12 @@ def main():
         "deltas_vs_baseline": {
             "rmse_delta": test_selected.rmse - test_baseline.rmse,
             "precision_delta": (
-                (test_selected.precision_at_thr or 0) - (test_baseline.precision_at_thr or 0)
+                (test_selected.precision_at_thr or 0)
+                - (test_baseline.precision_at_thr or 0)
             ),
             "recall_delta": (
-                (test_selected.recall_at_thr or 0) - (test_baseline.recall_at_thr or 0)
+                (test_selected.recall_at_thr or 0)
+                - (test_baseline.recall_at_thr or 0)
             ),
         },
     }
