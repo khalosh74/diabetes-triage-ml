@@ -16,6 +16,8 @@ Predict a **short‑term progression risk score** for diabetes check‑ins (high
 
 ---
 
+> **Research/demo only:** This uses scikit-learn's diabetes progression dataset and is **not a clinically validated triage model**. The high-risk flag is an illustrative cutoff, not medical advice. No real patient service or ongoing production monitoring is claimed.
+
 ## Run it (Docker – recommended, no Python needed)
 
 ```bash
@@ -105,13 +107,13 @@ age, sex, bmi, bp, s1, s2, s3, s4, s5, s6
 ## Reproduce training
 
 - Dataset: `sklearn.datasets.load_diabetes(as_frame=True)`
-- Split: `test_size=0.2`, `random_state=42`
+- Split: **60% training, 20% validation, 20% untouched test** (`random_state=42`). Model selection uses validation RMSE, not test RMSE.
 - **v0.1**: `StandardScaler + LinearRegression` → report RMSE
 - **v0.2.0**: Train **Ridge** & **RandomForestRegressor**, choose **best RMSE**; compute **high‑risk threshold** at the **0.75 quantile of y_train**; report **precision/recall @ threshold**
 
 Artifacts saved to `artifacts/`:
 - `model.pkl` – fitted model/pipeline + metadata (feature order, threshold, candidates)
-- `metrics.json` – baseline, candidates, selected, and deltas vs baseline
+- `metrics.json` – validation candidate scores, untouched-test baseline and selected-model results, and deltas vs baseline
 - `CHANGELOG.md` – auto‑appended summary for v0.2.0
 
 Training locally:
