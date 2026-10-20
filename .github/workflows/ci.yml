@@ -34,7 +34,6 @@ jobs:
       - name: Lint
         run: |
           ruff check .
-          black --diff src/diaclinic/train.py
           black --check .
 
       - name: Run tests
